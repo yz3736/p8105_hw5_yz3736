@@ -7,6 +7,7 @@ output: github_document
 This is my solution to Homework 5.
 ```{r setup, include = FALSE}
 library(tidyverse)
+library(patchwork)
 knitr::opts_chunk$set(
   fig.width = 6,
   fig.asp = .6,
@@ -168,13 +169,73 @@ t_test = function(mu) {
 rerun(5000, t_test(mu = 0)) %>% bind_rows()
 ```
 
-Repeat the above for mu of 1, 2, 3, 4, 5, and 6.
+Repeat the above for μ={1, 2, 3, 4, 5, 6}.
 ```{r}
-#trial_mu = 
-#  tibble(mu = c(0, 1, 2, 3, 4, 5, 6)) %>% 
-#  mutate(
-#    results = map(.x = mu, ~rerun(5000, t_test(mu = .x)))
-#  )
-
+trial_mu = 
+  tibble(mu = c(0, 1, 2, 3, 4, 5, 6)) %>% 
+  mutate(
+    result = map(.x = mu, ~rerun(5000, t_test(mu = .x)))
+  ) %>%
+  unnest(c(result)) %>%
+  unnest(c(result))
 ```
+
+Make a plot showing the proportion of times the null was rejected (the power of the test) on the y axis and the true value of μ on the x axis. Describe the association between effect size and power.
+```{r}
+power_mu =
+  trial_mu %>% 
+  group_by(mu) %>% 
+  summarise(
+    n = n(),
+    power = sum(decision == "Reject")/n
+  ) %>% 
+  ggplot(aes(x = mu, y = power)) + 
+  geom_line() +
+  geom_point() +
+  labs(
+    title = "Power of the t-test over true value of μ",
+    x = "True value of μ",
+    y = "Power"
+  )
+power_mu
+```
+
+Make a plot showing the average estimate of μ on the y axis and the true value of μ on the x axis. Make a second plot showing the average estimate of μ only in samples for which the null was rejected on the y axis and the true value of μ on the x axis.
+```{r}
+estimate_true_mu =
+  trial_mu %>% 
+  group_by(mu) %>% 
+  summarise(
+    avg_estimate_mu = mean(estimate)
+  ) %>% 
+  ggplot(aes(x = mu, y = avg_estimate_mu)) + 
+  geom_line() +
+  geom_point() +
+  labs(
+    title = "Average estimate of μ over true value of μ",
+    x = "True value of μ",
+    y = "Average estimate of μ"
+  )
+
+estimate_true_mu_rej =
+  trial_mu %>% 
+  filter(decision == "Reject") %>% 
+  group_by(mu) %>% 
+  summarise(
+    avg_estimate_mu = mean(estimate)
+  ) %>% 
+  ggplot(aes(x = mu, y = avg_estimate_mu)) + 
+  geom_line() +
+  geom_point() +
+  labs(
+    title = "Average estimate of μ over true value of μ for which the null was rejected",
+    x = "True value of μ",
+    y = "Average estimate of μ"
+  )
+
+estimate_true_mu / estimate_true_mu_rej
+```
+
+From the plot (upper) showing the average estimate of μ on the y axis and the true value of μ on the x axis, average estimates of μ are equal to the true values of μ for all μ.\
+From the plot (lower) showing the average estimate of μ only in samples for which the null was rejected on the y axis and the true value of μ on the x axis, average estimates of μ are higher than the true values of μ when μ is equal to 1, 2 or 3, and started to approximate the true mean as μ get larger than 4.
 
