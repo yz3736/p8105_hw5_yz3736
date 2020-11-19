@@ -114,8 +114,30 @@ path_tidy =
     values_to = "observation"
   ) %>% 
   mutate(
+    id = as.factor(id),
     week = as.numeric(week)
   )
 ```
+
+Make a spaghetti plot showing observations on each subject over time, and comment on differences between groups.
+
+```{r}
+obs_over_time = 
+  path_tidy %>%
+  group_by(arm, id) %>% 
+  ggplot(aes(x = week, y = observation, group = id, color = id)) +
+  geom_line() +
+  geom_point() +
+  facet_grid(arm ~ .) +
+  theme(legend.position = "bottom") +
+  labs(
+    title = "Observations on each subject in Control and Experiment Arms over time",
+    x = "Week",
+    y = "Observation"
+  )
+obs_over_time
+```
+
+From the spaghetti plot, participants in control arm have a decrease trend in their observation values, while participants in experiment arm have an increase trend in their observation values. There is a greater variation in observations among experiment arm, compared to control arm.
 
 
